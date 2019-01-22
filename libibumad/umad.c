@@ -1123,3 +1123,74 @@ void umad_dump(void *umad)
 	       mad->agent_id, mad->status, mad->timeout_ms);
 	umad_addr_dump(&mad->addr);
 }
+
+char **umad_get_ca_namelist(void)
+{
+	struct dirent **namelist;
+	int n, i, j = 0;
+	char **cas = NULL;
+
+	n = scandir(SYS_INFINIBAND, &namelist, NULL, alphasort);
+	if (n < 0) {
+		errno = ENOMEM;
+		goto error;
+	}
+
+	cas = (char **) calloc(n + 1, sizeof(char *));
+	if (!cas) {
+		errno = ENOMEM;
+		goto clean;
+	}
+
+	for (i = 0; i < n; i++) {
+		if (strcmp(namelist[i]->d_name, ".") &&
+		    strcmp(namelist[i]->d_name, "..")) {
+			if (is_ib_type(namelist[i]->d_name)) {
+				cas[j] = strdup(namelist[i]->d_name);
+				if (!cas[j]) {
+					errno = ENOMEM;
+					goto clean;
+				}
+
+				j++;
+			}
+		}
+	}
+	DEBUG("return %d cas", j);
+	if (!j) {
+		errno = EINVAL;
+		goto clean;
+	}
+
+	if (n >= 0) {
+		for (i = 0; i < n; i++)
+			free(namelist[i]);
+		free(namelist);
+	}
+
+	return cas;
+
+clean:
+	if (n >= 0) {
+		for (i = 0; i < n; i++)
+			free(namelist[i]);
+		free(namelist);
+	}
+
+	umad_free_ca_namelist(cas);
+
+error:
+	return NULL;
+}
+
+void umad_free_ca_namelist(char **cas)
+{
+	char **cas_idx = NULL;
+
+	if (cas) {
+		for (cas_idx = cas; *cas_idx; cas_idx++)
+			free(*cas_idx);
+
+		free(cas);
+	}
+}

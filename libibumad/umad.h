@@ -208,6 +208,8 @@ int umad_register(int portid, int mgmt_class, int mgmt_version,
 int umad_register_oui(int portid, int mgmt_class, uint8_t rmpp_version,
 		      uint8_t oui[3], long method_mask[16 / sizeof(long)]);
 int umad_unregister(int portid, int agentid);
+char **umad_get_ca_namelist(void);
+void umad_free_ca_namelist(char **cas);
 
 enum {
 	UMAD_USER_RMPP = (1 << 0)

@@ -1,0 +1,34 @@
+.\" -*- nroff -*-
+.\"
+.TH UMAD_GET_CA_NAMELIST 3  "May 1, 2018" "OpenIB" "OpenIB Programmer\'s Manual"
+.SH "NAME"
+umad_get_ca_namelist \- get list of available InfiniBand device names
+.SH "SYNOPSIS"
+.nf
+.B #include <infiniband/umad.h>
+.sp
+.BI "int umad_get_ca_namelist(char " "**cas" );
+.fi
+.SH "DESCRIPTION"
+.B umad_get_ca_namelist()
+fills the
+.I cas
+array with arbitrary number of local IB devices (CAs) names.
+The argument
+.I cas
+is a character array that will be allocated by the function to include number of entries, each with
+.B UMAD_CA_NAME_LEN
+characters.
+.SH "RETURN VALUE"
+.B umad_get_ca_namelist()
+returns a non-negative value equal to the number of entries filled,
+or \-1 on errors.
+.SH "SEE ALSO"
+.BR umad_get_ca_portguids (3),
+.BR umad_open_port (3)
+.BR umad_free_ca_namelist(3)
+.SH "AUTHORS"
+.TP
+Vladimir Koushnir <vladimirk@mellanox.com>
+.TP
+Hal Rosenstock <hal@mellanox.com>

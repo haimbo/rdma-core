@@ -1,0 +1,28 @@
+.\" -*- nroff -*-
+.\"
+.TH UMAD_FREE_CA_NAMELIST 3  "May 1, 2018" "OpenIB" "OpenIB Programmer\'s Manual"
+.SH "NAME"
+umad_free_ca_namelist \- free InfiniBand devices name list
+.SH "SYNOPSIS"
+.nf
+.B #include <infiniband/umad.h>
+.sp
+.BI "void umad_free_ca_namelist(char " "*cas" );
+.fi
+.SH "DESCRIPTION"
+.B umad_get_free_namelist()
+frees the InfiniBand devices name list previously allocated with
+.B umad_get_ca_namelist()\fR.
+The argument
+.I cas
+is a character array of InfiniBand devices names
+.SH "RETURN VALUE"
+.B umad_free_ca_namelist()
+returns no value.
+.SH "SEE ALSO"
+.BR umad_get_ca_namelist(3)
+.SH "AUTHORS"
+.TP
+Vladimir Koushnir <vladimirk@mellanox.com>
+.TP
+Hal Rosenstock <hal@mellanox.com>
