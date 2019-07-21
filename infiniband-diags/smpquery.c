@@ -480,7 +480,7 @@ int main(int argc, char **argv)
 		IBEXIT("Failed to open '%s' port '%d'", ibd_ca, ibd_ca_port);
 
 	smp_mkey_set(srcport, ibd_mkey);
-
+/*gf*/
 	node_name_map = open_node_name_map(node_name_map_file);
 
 	if (ibd_dest_type != IB_DEST_DRSLID) {
