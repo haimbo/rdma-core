@@ -475,6 +475,8 @@ int main(int argc, char **argv)
 	if (!(fn = match_op(match_tbl, argv[0])))
 		IBEXIT("operation '%s' not supported", argv[0]);
 
+	printf("Hello Haim Boozaglo\n");
+
 	srcport = mad_rpc_open_port(ibd_ca, ibd_ca_port, mgmt_classes, 3);
 	if (!srcport)
 		IBEXIT("Failed to open '%s' port '%d'", ibd_ca, ibd_ca_port);
