@@ -413,8 +413,11 @@ static void out_switch_port(ibnd_port_t *port, int group,
 			dump_linkspeed_compat(ispeed) :
 			dump_linkspeedext_compat(espeed, ispeed, fdr10));
 
-	if (full_info)
+	if (full_info) {
 		fprintf(f, " s=%d w=%d v=%d", ispeed, iwidth, vlcap);
+		if (espeed)
+			fprintf(f, " e=%d", espeed);
+	}
 
 	if (ibnd_is_xsigo_tca(port->remoteport->guid))
 		fprintf(f, " slot %d", port->portnum);
@@ -471,8 +474,12 @@ static void out_ca_port(ibnd_port_t *port, int group, const char *out_prefix)
 			dump_linkspeed_compat(ispeed) :
 			dump_linkspeedext_compat(espeed, ispeed, fdr10));
 
-	if (full_info)
+	if (full_info) {
 		fprintf(f, " s=%d w=%d v=%d", ispeed, iwidth, vlcap);
+		if (espeed)
+			fprintf(f, " e=%d", espeed);
+	}
+
 	fprintf(f, "\n");
 
 	free(rem_nodename);
