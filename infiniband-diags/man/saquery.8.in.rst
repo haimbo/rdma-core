@@ -136,6 +136,9 @@ OPTIONS
 
 **--service_id** ServiceID (PathRecord)
 
+**--dgid <gid>**
+        destination GID: use when GRH is required in packets (IPv6 format)
+
 Supported query names (and aliases):
 
 ::
