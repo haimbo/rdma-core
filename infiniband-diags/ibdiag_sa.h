@@ -60,6 +60,7 @@ struct sa_query_result {
 
 /* NOTE: umad_init must be called prior to sa_get_handle */
 struct sa_handle * sa_get_handle(void);
+int sa_set_handle(struct sa_handle * handle, int grh_present, ibmad_gid_t *gid);
 void sa_free_handle(struct sa_handle * h);
 
 int sa_query(struct sa_handle *h, uint8_t method,
