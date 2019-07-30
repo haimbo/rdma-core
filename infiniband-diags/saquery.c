@@ -77,6 +77,8 @@ struct query_params {
 	uint8_t join_state;
 	int proxy_join;
 	ib_class_port_info_t cpi;
+	uint8_t with_grh;
+	ibmad_gid_t sa_dgid;
 };
 
 struct query_cmd {
@@ -1035,6 +1037,29 @@ static int print_node_records(struct sa_handle * h, struct query_params *p)
 	return ret;
 }
 
+static int sm_pr_query(struct sa_handle * h, ibmad_gid_t *gid, int srclid, int destlid,
+					   struct query_params *p) {
+
+	ib_path_rec_t pr;
+	__be64 comp_mask = 0;
+	struct sa_query_result result;
+	int ret;
+	ib_path_rec_t *p_pr;
+
+	memset(&pr, 0, sizeof(pr));
+	CHECK_AND_SET_VAL(srclid, 16, 0, pr.slid, PR, SLID);
+	CHECK_AND_SET_VAL(destlid, 16, 0, pr.dlid, PR, DLID);
+
+	ret = get_any_records(h, IB_SA_ATTR_PATHRECORD, 0, comp_mask, &pr, sizeof(pr), &result);
+	if (ret)
+		return ret;
+
+	p_pr = sa_get_query_rec(result.p_result_madw, 0);
+	memcpy(gid, &p_pr->dgid, 16);
+	sa_free_result_mad(&result);
+	return ret;
+}
+
 static int query_path_records(const struct query_cmd *q, struct sa_handle * h,
 			      struct query_params *p, int argc, char *argv[])
 {
@@ -1691,6 +1716,11 @@ static int process_opt(void *context, int ch)
 	case 22:
 		p->service_id = strtoull(optarg, NULL, 0);
 		break;
+	case 23:
+		p->with_grh = 1;
+		if (inet_pton(AF_INET6, optarg, &p->sa_dgid) <= 0)
+			ibdiag_show_usage();
+		break;
 	default:
 		return -1;
 	}
@@ -1699,6 +1729,8 @@ static int process_opt(void *context, int ch)
 
 int main(int argc, char **argv)
 {
+	ib_portid_t portid = { 0 };
+	int port = 0;
 	int sa_cpi_required = 0;
 	char usage_args[1024];
 	struct sa_handle * h;
@@ -1727,6 +1759,8 @@ int main(int argc, char **argv)
 		{"S", 'S', 0, NULL, "get ServiceRecord info"},
 		{"I", 'I', 0, NULL, "get InformInfoRecord (subscription) info"},
 		{"list", 'D', 0, NULL, "the node desc of the CA's"},
+		{"sa-dgid", 23, 1, "<gid>",
+		 "Set destination GID (in IPv6 format) in the GRH"},
 		{"src-to-dst", 1, 1, "<src:dst>", "get a PathRecord for"
 		 " <src:dst> where src and dst are either node names or LIDs"},
 		{"sgid-to-dgid", 2, 1, "<sgid-dgid>", "get a PathRecord for"
@@ -1858,6 +1892,34 @@ int main(int argc, char **argv)
 	h = sa_get_handle();
 	if (!h)
 		IBPANIC("Failed to bind to the SA");
+
+	if (params.with_grh) {
+		ibmad_gid_t gid = { 0 };
+		/*
+		 * If GRH destination GID is not specified, try to get it by
+		 * querying the SA.
+		 */
+		if (!memcmp(&gid, &params.sa_dgid, sizeof(ibmad_gid_t))) {
+			if ((status = resolve_self(ibd_ca, ibd_ca_port, &portid,
+						   &port, 0)) < 0) {
+				fprintf(stderr, "can't resolve self port %s\n",
+					argv[0]);
+				goto error;
+			}
+			if ((status = sm_pr_query(h, &gid, portid.lid,
+						  h->dport.lid, &params)) > 0) {
+				fprintf(stderr,
+					"Failed to query SA:PathRecord\n");
+				goto error;
+			}
+		} else
+			memcpy(&gid, &params.sa_dgid, sizeof(ibmad_gid_t));
+
+		if ((status = sa_set_handle(h, 1, &gid)) < 0) {
+			fprintf(stderr, "Failed to set GRH\n");
+			goto error;
+		}
+	}
 
 	node_name_map = open_node_name_map(node_name_map_file);
 
