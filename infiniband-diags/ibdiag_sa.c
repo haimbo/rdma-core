@@ -88,6 +88,19 @@ err:
 	return (NULL);
 }
 
+int sa_set_handle(struct sa_handle * handle, int grh_present, ibmad_gid_t *gid)
+{
+	if (grh_present) {
+		if (gid == NULL) {
+			return -1;
+		} else {
+			handle->dport.grh_present = 1;
+			memcpy(handle->dport.gid, gid, 16);
+		}
+	}
+	return 0;
+}
+
 void sa_free_handle(struct sa_handle * h)
 {
 	umad_unregister(h->fd, h->agent);
@@ -123,6 +136,15 @@ int sa_query(struct sa_handle * h, uint8_t method,
 
 	if (ibdebug > 1)
 		xdump(stdout, "SA Request:\n", umad_get_mad(umad), len);
+
+	if (h->dport.grh_present) {
+		ib_mad_addr_t *p_mad_addr = umad_get_mad_addr(umad);
+		p_mad_addr->grh_present = 1;
+		p_mad_addr->gid_index = 0;
+		p_mad_addr->hop_limit = 0;
+		p_mad_addr->traffic_class = 0;
+		memcpy(p_mad_addr->gid, h->dport.gid, 16);
+	}
 
 	ret = umad_send(h->fd, h->agent, umad, len, ibd_timeout, 0);
 	if (ret < 0) {
