@@ -55,6 +55,8 @@ static uint64_t time_stamp(void)
 
 static char host_and_domain[IB_VENDOR_RANGE2_DATA_SIZE];
 static char last_host[IB_VENDOR_RANGE2_DATA_SIZE];
+static ibmad_gid_t dgid;
+static int with_grh;
 
 static void get_host_and_domain(char *data, int sz)
 {
@@ -185,6 +187,14 @@ static int process_opt(void *context, int ch)
 	case 'S':
 		server++;
 		break;
+	case 25:
+		if (!inet_pton(AF_INET6, optarg, &dgid)) {
+			printf("dgid format is wrong!\n");
+			ibdiag_show_usage();
+			return 1;
+		}
+		with_grh = 1;
+		break;
 	default:
 		return -1;
 	}
@@ -203,6 +213,7 @@ int main(int argc, char **argv)
 		{"flood", 'f', 0, NULL, "flood destination"},
 		{"oui", 'o', 1, NULL, "use specified OUI number"},
 		{"Server", 'S', 0, NULL, "start in server mode"},
+		{"dgid", 25, 1, NULL, "remote gid (IPv6 format)"},
 		{}
 	};
 	char usage_args[] = "<dest lid|guid>";
@@ -236,9 +247,16 @@ int main(int argc, char **argv)
 		IBEXIT("can't register ping class %d on this port",
 			ping_class);
 
+	if (with_grh && ibd_dest_type != IB_DEST_LID)
+		IBEXIT("When using GRH, LID should be provided");
 	if (resolve_portid_str(ibd_ca, ibd_ca_port, &portid, argv[0],
 			       ibd_dest_type, ibd_sm_id, srcport) < 0)
 		IBEXIT("can't resolve destination port %s", argv[0]);
+
+	if (with_grh) {
+		portid.grh_present = 1;
+		memcpy(&portid.gid, &dgid, sizeof(portid.gid));
+	}
 
 	signal(SIGINT, report);
 	signal(SIGTERM, report);
