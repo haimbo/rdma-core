@@ -40,6 +40,8 @@ use specified OUI number to multiplex vendor mads
 **-S, --Server**
 start in server mode (do not return)
 
+**--dgid <gid>**
+destination GID: use when GRH is required in packets (IPv6 format)
 
 Addressing Flags
 ----------------
