@@ -1051,8 +1051,9 @@ static int query_path_records(const struct query_cmd *q, struct sa_handle * h,
 	CHECK_AND_SET_VAL(p->slid, 16, 0, pr.slid, PR, SLID);
 	CHECK_AND_SET_VAL(p->dlid, 16, 0, pr.dlid, PR, DLID);
 	CHECK_AND_SET_VAL(p->hop_limit, 32, -1, pr.hop_flow_raw, PR, HOPLIMIT);
-	CHECK_AND_SET_VAL(p->flow_label, 8, 0, flow, PR, FLOWLABEL);
-	pr.hop_flow_raw |= htobe32(flow << 8);
+	CHECK_AND_SET_VAL((p->flow_label << 8), 32, 0, flow, PR, FLOWLABEL);
+	pr.hop_flow_raw =
+		(pr.hop_flow_raw & htobe32(~0x0FFFFF00)) | flow;
 	CHECK_AND_SET_VAL(p->tclass, 8, 0, pr.tclass, PR, TCLASS);
 	CHECK_AND_SET_VAL(p->reversible, 8, -1, reversible, PR, REVERSIBLE);
 	CHECK_AND_SET_VAL(p->numb_path, 8, -1, pr.num_path, PR, NUMBPATH);
@@ -1200,9 +1201,10 @@ static int query_mcmember_records(const struct query_cmd *q,
 	CHECK_AND_SET_VAL(p->tclass, 8, 0, mr.tclass, MCR, TCLASS);
 	CHECK_AND_SET_VAL(p->pkey, 16, 0, mr.pkey, MCR, PKEY);
 	CHECK_AND_SET_VAL(p->sl, 8, -1, sl, MCR, SL);
-	CHECK_AND_SET_VAL(p->flow_label, 8, 0, flow, MCR, FLOW);
-	CHECK_AND_SET_VAL(p->hop_limit, 8, -1, hop, MCR, HOP);
-	mr.sl_flow_hop = ib_member_set_sl_flow_hop(sl, flow, hop);
+	CHECK_AND_SET_VAL(p->flow_label, 32, 0, flow, MCR, FLOW);
+	CHECK_AND_SET_VAL(p->hop_limit, 8, 0, hop, MCR, HOP);
+	/* pass flow in host order as expected by function */
+	mr.sl_flow_hop = ib_member_set_sl_flow_hop(sl, be32toh(flow), hop);
 	CHECK_AND_SET_VAL(p->scope, 8, 0, scope, MCR, SCOPE);
 	CHECK_AND_SET_VAL(p->join_state, 8, 0, mr.scope_state, MCR, JOIN_STATE);
 	mr.scope_state |= scope << 4;
@@ -1779,7 +1781,7 @@ int main(int argc, char **argv)
 	};
 
 	memset(&params, 0, sizeof params);
-	params.hop_limit = -1;
+	params.hop_limit = 0;
 	params.reversible = -1;
 	params.numb_path = -1;
 	params.qos_class = -1;
